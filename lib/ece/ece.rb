@@ -34,7 +34,7 @@ class ECE
     if params.has_key?(:auth) # Encrypted Content Encoding, March 11 2016, http://httpwg.org/http-extensions/draft-ietf-httpbis-encryption-encoding.html
       auth = true
       input = HKDF.new(input_key, {salt: params[:auth] , algorithm: 'sha256', info: "Content-Encoding: auth\x00"})
-      input_key = input.next_bytes(SHA256_LENGTH)
+      input_key = input.read(SHA256_LENGTH)
       secret =  HKDF.new(input_key, {salt: params[:salt], algorithm: 'sha256', info: get_info("aesgcm", params[:user_public_key], params[:server_public_key])})
       nonce =  HKDF.new(input_key, salt: params[:salt], algorithm: 'sha256', info: get_info("nonce", params[:user_public_key], params[:server_public_key]))
     else
@@ -42,7 +42,7 @@ class ECE
       nonce =  HKDF.new(input_key, salt: params[:salt], algorithm: 'sha256', info: "Content-Encoding: nonce")
     end
 
-    {key: secret.next_bytes(KEY_LENGTH), nonce: nonce.next_bytes(NONCE_LENGTH), auth: auth}
+    {key: secret.read(KEY_LENGTH), nonce: nonce.read(NONCE_LENGTH), auth: auth}
   end
 
   def self.generate_nonce(nonce, counter)
