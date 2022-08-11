@@ -1,0 +1,48 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  schedule:
+    - cron: "0 0 * * 0" # 00:00 (UTC) on Sunday
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.ruby }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        ruby:
+          - ruby:2.7
+          - ruby:3.0
+          - ruby:3.1
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache vendor/bundle
+        uses: actions/cache@v3
+        id: cache
+        with:
+          path: vendor/bundle
+          key: gems-${{ runner.os }}-${{ matrix.ruby }}-${{ github.sha }}
+
+      - name: bundle update
+        run: |
+          set -xe
+          bundle config path vendor/bundle
+          bundle update --jobs $(nproc) --retry 3
+
+      - run: bundle exec rake
+        timeout-minutes: 1
